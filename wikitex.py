@@ -222,6 +222,12 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
+    #Purpose: Convert the the metis wiki syntax to tex files
+    #This is the main program, which calls three other functions:
+    #mode_page -> Parses the first page on the wiki for each mode (linked from the CMD table)
+    #template_page -> Parses the page of each observing or acquisition template
+    #tables -> Creates tables for each template, to be included in the template manual
+    
     tar = tarfile.open("metis_operations_2018-12-11T17_00_01.tar.gz", "r:gz")
     tar.extractall()
 
