@@ -63,7 +63,7 @@ def mode_page(in_dir, out_dir, files):
             line=lines[pos[j]]
             tag=line.replace('====','')
             tag=tag.strip()
-            if ' ' in tag: tag=tag.replace(' ','')
+            if ' ' in tag: tag=tag.replace(' ','-')
 
             #insert tag to start the subsection
             f1.write('%<*'+tag+'>'+"\n")
@@ -73,6 +73,14 @@ def mode_page(in_dir, out_dir, files):
             for i in range(pos[j]+1,pos[j+1]):
                 line=lines[i]
 
+
+                start="''"
+                end="''"
+                if start in line:
+                    txt=line[line.find(start)+len(start):line.rfind(end)]
+                    print txt
+                    line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
+  
                 ##All lines that don't start with '  *' are not itemized
                 if line[:3] != '  *':
                     f1.write(line+"\n")
@@ -122,7 +130,7 @@ def template_page(in_dir, out_dir, files):
             tag=line.replace('|','')
             tag=tag.strip()
             title=tag
-            if ' ' in tag: tag=tag.replace(' ','')
+            if ' ' in tag: tag=tag.replace(' ','-')
           #  sec_name=sec_name_0+'_'+txt+'.tex'
           #  f1=open(out_dir+sec_name, 'w')
           #  print sec_name
@@ -140,6 +148,14 @@ def template_page(in_dir, out_dir, files):
                 line=lines[i]
                 ##Some Notes with wiki syntax **Notes:**
                 if '**' in line: line=line.replace('**','')
+
+                start="''"
+                end="''"
+                if start in line:
+                    txt=line[line.find(start)+len(start):line.rfind(end)]
+                    print txt
+                    line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
+  
                 
                 ##All lines that don't start with '  *' are not itemized
                 if line[:3] != '  *' and line[:5] !='    *':
@@ -259,13 +275,13 @@ def main():
 
     in_dir="operations"
     out_dir='metis_template_manual/'+in_dir+"_tex/"
-    #out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
+    out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
         
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
         
-    #if not os.path.exists(out_dir_2):
-    #    os.makedirs(out_dir_2)
+    if not os.path.exists(out_dir_2):
+        os.makedirs(out_dir_2)
 
     ##main pages for each mode, output starts with MODE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.endswith('.txt') and
@@ -281,7 +297,7 @@ def main():
     tables(in_dir, out_dir, files)
 
     ##Copy
-    #os.system('cp -r '+ out_dir +' ' + out_dir_2)
+    os.system('cp -r '+ out_dir +' ' + out_dir_2)
     
 if __name__ == "__main__":
     main()
