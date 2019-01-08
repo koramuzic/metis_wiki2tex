@@ -259,13 +259,13 @@ def main():
 
     in_dir="operations"
     out_dir='metis_template_manual/'+in_dir+"_tex/"
-    out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
+    #out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
         
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
         
-    if not os.path.exists(out_dir_2):
-        os.makedirs(out_dir_2)
+    #if not os.path.exists(out_dir_2):
+    #    os.makedirs(out_dir_2)
 
     ##main pages for each mode, output starts with MODE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.endswith('.txt') and
@@ -281,7 +281,7 @@ def main():
     tables(in_dir, out_dir, files)
 
     ##Copy
-    os.system('cp -r '+ out_dir +' ' + out_dir_2)
+    #os.system('cp -r '+ out_dir +' ' + out_dir_2)
     
 if __name__ == "__main__":
     main()
