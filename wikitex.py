@@ -73,12 +73,11 @@ def mode_page(in_dir, out_dir, files):
             for i in range(pos[j]+1,pos[j+1]):
                 line=lines[i]
 
-
+                ##Find text in double quotes and format it with \texttt
                 start="''"
                 end="''"
                 if start in line:
                     txt=line[line.find(start)+len(start):line.rfind(end)]
-                    print txt
                     line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
   
                 ##All lines that don't start with '  *' are not itemized
@@ -149,11 +148,11 @@ def template_page(in_dir, out_dir, files):
                 ##Some Notes with wiki syntax **Notes:**
                 if '**' in line: line=line.replace('**','')
 
+                ##Find text in double quotes and format it with \texttt
                 start="''"
                 end="''"
                 if start in line:
                     txt=line[line.find(start)+len(start):line.rfind(end)]
-                    print txt
                     line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
   
                 
@@ -275,13 +274,13 @@ def main():
 
     in_dir="operations"
     out_dir='metis_template_manual/'+in_dir+"_tex/"
-    out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
+   # out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
         
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
         
-    if not os.path.exists(out_dir_2):
-        os.makedirs(out_dir_2)
+   # if not os.path.exists(out_dir_2):
+   #     os.makedirs(out_dir_2)
 
     ##main pages for each mode, output starts with MODE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.endswith('.txt') and
@@ -297,7 +296,7 @@ def main():
     tables(in_dir, out_dir, files)
 
     ##Copy
-    os.system('cp -r '+ out_dir +' ' + out_dir_2)
+   # os.system('cp -r '+ out_dir +' ' + out_dir_2)
     
 if __name__ == "__main__":
     main()
