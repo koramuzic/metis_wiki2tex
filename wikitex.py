@@ -15,13 +15,27 @@ import pdb
 #\1 Some more text
 #\end{outline}
 
+#Note on tags:
+#This scripts produces one tex file per wiki page (except for the tables that are contained in separate files)
+#Different subsections of each page contain a tag at the beginning and the end of the section, that can be
+#used to execute only a part of the tex file in latex.
+#this is done with the help of the package catchfilebetweentags
+#\usepackage{catchfilebetweentags}
+#...
+#\ExecuteMetaData[file.tex]{tag}
+#where the contents of the external file is surrounded by the "tags":
+#%<*tag>
+# content
+#%</tag>
+
 def mode_page(in_dir, out_dir, files):
     
 
     for file in files:
         sec_name_0=file.replace(in_dir+'/','')
-        sec_name_0=sec_name_0.replace('.txt','')
-      
+        sec_name_0='MODE_'+sec_name_0.replace('.txt','')
+        f1=open(out_dir+sec_name_0+'.tex', 'w')
+       
         with open(file) as f: lines = [line.rstrip('\n') for line in f]
 
         #Look for positions of ==== (start of sections)
@@ -47,17 +61,18 @@ def mode_page(in_dir, out_dir, files):
         for j in range(len(pos)-1):
             #Extract the name of the section
             line=lines[pos[j]]
-            txt=line.replace('====','')
-            txt=txt.strip()
-            if ' ' in txt: txt=txt.replace(' ','_')
-            sec_name=sec_name_0+'_'+txt+'.tex'           
-            f1=open(out_dir+sec_name, 'w')
-            print sec_name
+            tag=line.replace('====','')
+            tag=tag.strip()
+            if ' ' in tag: tag=tag.replace(' ','')
 
+            #insert tag to start the subsection
+            f1.write('%<*'+tag+'>'+"\n")
+            
             #Write text into section latex form
             c1=0
             for i in range(pos[j]+1,pos[j+1]):
                 line=lines[i]
+
                 ##All lines that don't start with '  *' are not itemized
                 if line[:3] != '  *':
                     f1.write(line+"\n")
@@ -81,13 +96,16 @@ def mode_page(in_dir, out_dir, files):
                     else:    
                         f1.write(line+"\n")
                     c1+=1  
-
+           #insert tag to end the subsection
+            f1.write('%</'+tag+'>'+"\n")
+    
 def template_page(in_dir, out_dir, files):
     
     for file in files:
         sec_name_0=file.replace(in_dir+'/','')
-        sec_name_0=sec_name_0.replace('.txt','')
-        
+        sec_name_0='TEMPLATE_'+sec_name_0.replace('.txt','')
+        f1=open(out_dir+sec_name_0+'.tex', 'w')
+                
         with open(file) as f: lines = [line.rstrip('\n') for line in f]
 
         #Look for positions of ++++ (start of sections)
@@ -101,14 +119,17 @@ def template_page(in_dir, out_dir, files):
         for j in range(0,len(pos)-1,2):
             #Extract the name of the section
             line=lines[pos[j]+1]
-            txt=line.replace('|','')
-            txt=txt.strip()
-            title=txt
-            if ' ' in txt: txt=txt.replace(' ','_')
-            sec_name=sec_name_0+'_'+txt+'.tex'
-            f1=open(out_dir+sec_name, 'w')
-            print sec_name
-            
+            tag=line.replace('|','')
+            tag=tag.strip()
+            title=tag
+            if ' ' in tag: tag=tag.replace(' ','')
+          #  sec_name=sec_name_0+'_'+txt+'.tex'
+          #  f1=open(out_dir+sec_name, 'w')
+          #  print sec_name
+
+          #insert tag at the start of the subsection
+            f1.write('%<*'+tag+'>'+"\n")
+
             f1.write('\\underline{ '+title+'}'+"\n")
             
             #Write text into latex form
@@ -143,7 +164,10 @@ def template_page(in_dir, out_dir, files):
                     f1.write(line+"\n")
                     if i == pos[j+1]-1 and c2 == 0: f1.write('\\end{outline}'+"\n") #final end itemize
                     c1+=1  
-                                      
+
+            #insert tag to end the subsection
+            f1.write('%</'+tag+'>'+"\n")
+                           
 
 def tables(in_dir,out_dir,files):
 
@@ -155,13 +179,13 @@ def tables(in_dir,out_dir,files):
         template_name=template_name.upper()
         if 'ACQ' in template_name: template_name = template_name.replace('ACQ', 'ACQ'.lower())
         if 'OBS' in template_name: template_name = template_name.replace('OBS', 'OBS'.lower())
-        sec_name=sec_name.replace('.txt','_partable.tex')
+        sec_name='PARAMTABLE_'+sec_name.replace('.txt','.tex')
         f1=open(out_dir+sec_name, 'w')
 
         f1.write('\\begin{table*}[htbp]'+"\n")
         f1.write('\\label{tab:'+label+'}'+"\n")
         f1.write('\\caption{Parameters of '+template_name+'}'+"\n")
-        f1.write('\\scriptsize'+"\n")
+        f1.write('\\footnotesize'+"\n")
         f1.write('\\begin{tabular}{llll}'+"\n")
         f1.write('\\hline'+"\n")
         f1.write('\\multicolumn{4}{c}{\\bf{'+template_name+'}}\\\\'+"\n")
@@ -217,18 +241,20 @@ def tables(in_dir,out_dir,files):
 
                   
 def main():
-   # url='https://home.strw.leidenuniv.nl/~burtscher/metis_operations/'
-   # u = urllib2.urlopen(url)
-   # meta = u.info()
-   # date=meta.getheaders("Date")
-    
+
     #Purpose: Convert the the metis wiki syntax to tex files
     #This is the main program, which calls three other functions:
     #mode_page -> Parses the first page on the wiki for each mode (linked from the CMD table)
     #template_page -> Parses the page of each observing or acquisition template
     #tables -> Creates tables for each template, to be included in the template manual
+
     
-    tar = tarfile.open("metis_operations_2018-12-11T17_00_01.tar.gz", "r:gz")
+   # url='https://home.strw.leidenuniv.nl/~burtscher/metis_operations/'
+   # u = urllib2.urlopen(url)
+   # meta = u.info()
+   # date=meta.getheaders("Date")
+    
+    tar = tarfile.open("metis_operations_2019-01-08T11_25_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
@@ -241,16 +267,16 @@ def main():
     if not os.path.exists(out_dir_2):
         os.makedirs(out_dir_2)
 
-    ##main pages for each mode    
+    ##main pages for each mode, output starts with MODE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.endswith('.txt') and
              'discussion' not in f and (f.startswith('img') or f.startswith('ifu') or f.startswith('spec'))]
     mode_page(in_dir, out_dir, files)
 
-    ##pages for each template (full procedure)
+    ##pages for each template, output starts with TEMPLATE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt')]
     template_page(in_dir, out_dir, files)
     
-    ##create tables for template manual
+    ##create tables for template manual, output starts with PARAMTABLE
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt')]
     tables(in_dir, out_dir, files)
 
