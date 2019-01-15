@@ -228,9 +228,9 @@ def tables(in_dir,out_dir,files):
                     if '_' in txt[j]: 
                         tmp=txt[j].replace('_','\_')
                         txt[j]=tmp
-
+                        
                 maxlen=30 #if the line is too long, split into several    
-                if len(txt[3]) <= maxlen:
+                if len(txt[3].rstrip()) <= maxlen:
                     f1.write(txt[1] + ' & '+ txt[2] + ' & '+ txt[3]  + ' & '+ txt[4] + '\\\\'+"\n")
                 else:
                     tmp=txt[3].rstrip()
@@ -269,11 +269,11 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-08T11_25_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-15T17_15_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
-    out_dir='metis_template_manual/'+in_dir+"_tex/"
+    out_dir=in_dir+"_tex/"
    # out_dir_2='metis_operational_concepts/'+in_dir+"_tex/"
         
     if not os.path.exists(out_dir):
