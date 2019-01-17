@@ -73,6 +73,9 @@ def mode_page(in_dir, out_dir, files):
             for i in range(pos[j]+1,pos[j+1]):
                 line=lines[i]
 
+                ##All lines that start with '[comment]' should be omitted
+                if '[comment]' in line: continue
+                
                 ##Find text in double quotes and format it with \texttt
                 start="''"
                 end="''"
@@ -148,6 +151,9 @@ def template_page(in_dir, out_dir, files):
                 ##Some Notes with wiki syntax **Notes:**
                 if '**' in line: line=line.replace('**','')
 
+                ##All lines that start with '[comment]' should be omitted
+                if '[comment]' in line: continue
+                
                 ##Find text in double quotes and format it with \texttt
                 start="''"
                 end="''"
@@ -198,8 +204,8 @@ def tables(in_dir,out_dir,files):
         f1=open(out_dir+sec_name, 'w')
 
         f1.write('\\begin{table*}[htbp]'+"\n")
-        f1.write('\\label{tab:'+label+'}'+"\n")
         f1.write('\\caption{Parameters of '+template_name+'}'+"\n")
+        f1.write('\\label{tab:'+label+'}'+"\n")
         f1.write('\\footnotesize'+"\n")
         f1.write('\\begin{tabular}{llll}'+"\n")
         f1.write('\\hline'+"\n")
@@ -251,7 +257,93 @@ def tables(in_dir,out_dir,files):
         f1.write('\\hline'+"\n")
         f1.write('\\end{tabular}'+"\n")        
         f1.write('\\end{table*}'+"\n")        
-           
+
+
+def table_cmds(in_dir,out_dir,files):
+
+    ##Translate parameter tables from wiki to latex syntax for the template manual
+     for file in files:
+        sec_name='metis_modes.tex'
+        f1=open(out_dir+sec_name, 'w')
+        with open(file) as f: lines = [line.rstrip('\n') for line in f]
+
+        ##search the starting and ending lines for each mode
+        iimg=np.array([-1])
+        ilss=np.array([-1])
+        iifu=np.array([-1])
+      
+        for i in range(len(lines)):
+            line=lines[i]
+            if 'IMG' in line and '<del>' not in line: iimg=np.append(iimg,i) 
+            if 'SPEC' in line and '<del>' not in line: ilss=np.append(ilss,i)
+            if 'IFU' in line and '<del>' not in line: iifu=np.append(iifu,i)
+        iimg=np.delete(iimg,0)
+        ilss=np.delete(ilss,0)
+        iifu=np.delete(iifu,0)
+
+        f1.write('\\begin{table*}[htbp]'+"\n")
+        f1.write('\\centering'+"\n")
+        f1.write('\\caption{METIS instrument modes}'+"\n")
+        f1.write('\\label{tab:metis_modes}'+"\n")
+        f1.write('\\begin{tabular}{ll}'+"\n")
+        f1.write('\\hline'+"\n")
+        f1.write('{\\bf Instrument mode code} & {\\bf Instrument mode name}\\\\'+"\n")
+        f1.write('\\hline'+"\n")
+        f1.write('\\hline'+"\n")
+        f1.write('\\\\'+"\n")
+        f1.write('\\multicolumn{2}{c}{\\bf{Imaging}}\\\\'+"\n")
+        f1.write('\\hline'+"\n")
+
+        for i in range(min(iimg),max(iimg)+1):
+            line=lines[i]
+            txt = re.split('[|]',line)
+            for j in range(0,len(txt)-1):
+                if '_' in txt[j]: 
+                    tmp=txt[j].replace('_','\_')
+                    txt[j]=tmp
+                if ']]' in txt[j]: 
+                    tmp=txt[j].replace(']]','')
+                    txt[j]=tmp    
+            f1.write(txt[1] + ' & '+ txt[4]  + '\\\\'+"\n")
+            
+        f1.write('\\hline'+"\n")
+        f1.write('\\\\'+"\n")
+        f1.write('\\multicolumn{2}{c}{\\bf{Long-slit spectroscopy}}\\\\'+"\n")
+        f1.write('\\hline'+"\n")
+
+        for i in range(min(ilss),max(ilss)+1):
+            line=lines[i]
+            txt = re.split('[|]',line)
+            for j in range(0,len(txt)-1):
+                if '_' in txt[j]: 
+                    tmp=txt[j].replace('_','\_')
+                    txt[j]=tmp
+                if ']]' in txt[j]: 
+                    tmp=txt[j].replace(']]','')
+                    txt[j]=tmp    
+    
+            f1.write(txt[1] + ' & '+ txt[4]  + '\\\\'+"\n")
+    
+        f1.write('\\hline'+"\n")
+        f1.write('\\\\'+"\n")
+        f1.write('\\multicolumn{2}{c}{\\bf{Integral Field Unit}}\\\\'+"\n")
+        f1.write('\\hline'+"\n")
+        for i in range(min(iifu),max(iifu)+1):
+            line=lines[i]
+            txt = re.split('[|]',line)
+            for j in range(0,len(txt)-1):
+                if '_' in txt[j]: 
+                    tmp=txt[j].replace('_','\_')
+                    txt[j]=tmp
+                if ']]' in txt[j]: 
+                    tmp=txt[j].replace(']]','')
+                    txt[j]=tmp        
+            f1.write(txt[1] + ' & '+ txt[4]  + '\\\\'+"\n")
+
+        f1.write('\\hline'+"\n")    
+        f1.write('\\end{tabular}'+"\n")        
+        f1.write('\\end{table*}'+"\n")        
+                  
 
 
                   
@@ -269,7 +361,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-15T17_15_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-16T15_15_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
@@ -295,6 +387,10 @@ def main():
     files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt')]
     tables(in_dir, out_dir, files)
 
+    ##create the main cmd table
+    files=[os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('cmds') and f.endswith('.txt')]
+    table_cmds(in_dir, out_dir, files)
+    
     ##Copy
    # os.system('cp -r '+ out_dir +' ' + out_dir_2)
     
