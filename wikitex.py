@@ -28,7 +28,7 @@ import pdb
 # content
 #%</tag>
 
-def mode_page(in_dir, out_dir, files):
+def mode_page(in_dir,out_dir, files):
     
 
     for file in files:
@@ -102,7 +102,7 @@ def mode_page(in_dir, out_dir, files):
                     if txt:
                         txt=txt.group(1)
                         txt=txt.replace('_','\_')
-                        f1.write(txt +"\n")
+                        f1.write('\\texttt{'+txt +"}\n")
                     else:    
                         f1.write(line+"\n")
                     c1+=1  
@@ -204,12 +204,12 @@ def tables(in_dir,out_dir,files):
         f1=open(out_dir+sec_name, 'w')
 
         f1.write('\\begin{table*}[htbp]'+"\n")
-        f1.write('\\caption{Parameters of '+template_name+'}'+"\n")
+        f1.write('\\caption{Parameters of \\texttt{'+template_name+'}}'+"\n")
         f1.write('\\label{tab:'+label+'}'+"\n")
         f1.write('\\footnotesize'+"\n")
         f1.write('\\begin{tabular}{llll}'+"\n")
         f1.write('\\hline'+"\n")
-        f1.write('\\multicolumn{4}{c}{\\bf{'+template_name+'}}\\\\'+"\n")
+        f1.write('\\multicolumn{4}{c}{\\large{\\texttt{'+template_name+'}}}\\\\'+"\n")
         f1.write('\\hline'+"\n")
         f1.write('Parameter & Hidden & Range (Default) & Label \\\\'+"\n")
         f1.write('\\hline'+"\n")
@@ -361,7 +361,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-16T15_15_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-18T12_45_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
