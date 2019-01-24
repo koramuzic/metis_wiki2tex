@@ -190,7 +190,7 @@ def template_page(in_dir, out_dir, files):
             f1.write('%</'+tag+'>'+"\n")
                            
 
-def tables(in_dir,out_dir,files):
+def param_tables(in_dir,out_dir,files):
 
     ##Translate parameter tables from wiki to latex syntax for the template manual
     for file in files:
@@ -229,31 +229,35 @@ def tables(in_dir,out_dir,files):
             if 'HIERARCH ESO' in line: line = line.replace('HIERARCH ESO', '')
             if '|' in line:
                 txt = re.split('[|]',line)
-                        
+                   
                 for j in range(0,len(txt)-1):
                     if '_' in txt[j]: 
                         tmp=txt[j].replace('_','\_')
                         txt[j]=tmp
-                        
+                       
                 maxlen=30 #if the line is too long, split into several    
                 if len(txt[3].rstrip()) <= maxlen:
                     f1.write(txt[1] + ' & '+ txt[2] + ' & '+ txt[3]  + ' & '+ txt[4] + '\\\\'+"\n")
                 else:
                     tmp=txt[3].rstrip()
                     txt[3]=tmp
-                    a=len(txt[3])/maxlen
-                    b=len(txt[3])%maxlen
-                    
-                    for k in range(a):    
-                        tmp=txt[3]
-                        tmp=tmp[k*maxlen:(k+1)*maxlen]
-                        if k == 0: f1.write(txt[1] +  ' & '+ txt[2] + ' & '+ tmp  + ' & '+ txt[4] + '\\\\'+"\n")
+                    ##split in two or more lines if the line is longer than maxlen characters
+                    tmp0=txt[3].split(' ')
+                    c1=0
+                    c2=0
+                    for k in range(len(tmp0)):
+                        if c1 == 0: tmp=tmp0[k]
+                        else: tmp=tmp+' '+tmp0[k]
+                        c1=c1+1
+                        if len(tmp) >= maxlen:
+                            c1=0
+                            if c2 == 0:
+                                f1.write(txt[1] +  ' & '+ txt[2] + ' & '+ tmp  + ' & '+ txt[4] + '\\\\'+"\n")
+                                c2=c2+1
                         else: f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")
-                    if b !=0:
-                        tmp=txt[3]
-                        tmp=tmp[a*maxlen:len(txt[3])]
-                        f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")
-                                            
+                               
+                    if len(tmp) > 0: f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")         
+                                                            
         f1.write('\\hline'+"\n")
         f1.write('\\end{tabular}'+"\n")        
         f1.write('\\end{table*}'+"\n")        
@@ -343,8 +347,92 @@ def table_cmds(in_dir,out_dir,files):
         f1.write('\\hline'+"\n")    
         f1.write('\\end{tabular}'+"\n")        
         f1.write('\\end{table*}'+"\n")        
-                  
 
+        
+def template_tables(in_dir,out_dir,files):
+
+    ##Translate the list of templates from wiki to latex tables for the template manual
+
+    for file in files:
+        with open(file) as f: lines = [line.rstrip('\n') for line in f]
+
+        #Look for positions of ++++ (start of sections)
+        pos=np.array([-1])
+        c1=0
+        for line in lines:
+            if '++++' in line:
+                pos=np.append(pos,c1)
+            c1 +=1
+        pos=np.delete(pos,0)
+      
+        for j in range(0,len(pos)-1,2):
+           
+            #Extract the name of the section
+            line=lines[pos[j]+1]
+            sec_name=line.replace('|','')
+            sec_name=sec_name.strip()
+            caption=sec_name
+            sec_name=sec_name.replace(' ','_')
+
+            f1=open(out_dir+sec_name+'.tex', 'w')
+   
+            f1.write('\\begin{table*}[htbp]'+"\n")
+            f1.write('\\centering'+"\n")
+            f1.write('\\caption{'+caption+'}'+"\n")
+            f1.write('\\label{tab:'+caption.lower()+'}'+"\n")
+            f1.write('\\begin{tabular}{ll}'+"\n")
+            f1.write('\\hline'+"\n")
+            f1.write('{\\bf Template name} & {\\bf Functionality}\\\\'+"\n")
+            f1.write('\\hline'+"\n")
+   
+            for i in range(pos[j]+3,pos[j+1]):
+                line=lines[i]
+                if 'LAMP_off' in line: continue #exclude the LAMP_off flat "template"
+
+                if '**' in line:
+                    line=line.replace('|**','')
+                    line=line.replace('**|','')
+                    f1.write('\\hline'+"\n")
+                    f1.write('\\\\'+"\n")
+                    f1.write('\\multicolumn{2}{c}{\\bf{'+line+'}}\\\\'+"\n")
+                    f1.write('\\hline'+"\n")
+                else:
+                    line=line.replace('[[','')
+                    line=line.replace(']]','')
+                    txt = re.split('[|]',line)
+                    for k in range(0,len(txt)-1):
+                        if '_' in txt[k]: 
+                            tmp=txt[k].replace('_','\_')
+                            txt[k]=tmp
+                    #print txt
+                    ##look for the positions of spaces in line
+                    ##split in two if the line is longer than 70 characters
+                    c=' '
+                    spaces=[pos1 for pos1, char in enumerate(txt[3]) if char == c]
+                   
+                    if 'Acquisi' in sec_name: maxlen=75
+                    if 'Science' in sec_name: maxlen=60
+                    if 'Calib' in sec_name: maxlen=75
+
+                    if max(spaces) < maxlen: f1.write('\\texttt{'+txt[1]+'}' + ' & '+ txt[3]  + '\\\\'+"\n")
+                    else:
+                        tmp=txt[3]
+                        #look for the space position < maxlen and closest to it
+                        #there is probably a more elegant way to do this...
+                        d=np.repeat(maxlen,len(spaces))
+                        d=d-spaces
+                        ind1=np.where(d>0)
+                        ind1=ind1[0]
+                        d=d[ind1]
+                        ind2=np.argmin(d)
+                        split=spaces[ind1[ind2]]
+                        f1.write('\\texttt{'+txt[1]+'}' + ' & '+ tmp[0:split]  + '\\\\'+"\n")
+                        f1.write(' & '+ tmp[split:len(line)-1]  + '\\\\'+"\n")
+               
+            f1.write('\\hline'+"\n")    
+            f1.write('\\end{tabular}'+"\n")        
+            f1.write('\\end{table*}'+"\n")        
+    
 
                   
 def main():
@@ -361,7 +449,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-18T12_45_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-23T16_40_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
@@ -384,12 +472,16 @@ def main():
     template_page(in_dir, out_dir, files)
     
     ##create tables for template manual, output starts with PARAMTABLE
-    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt')]
-    tables(in_dir, out_dir, files)
+    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt') and ('acq' in f or 'obs' in f)]
+    param_tables(in_dir, out_dir, files)
 
     ##create the main cmd table
     files=[os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('cmds') and f.endswith('.txt')]
     table_cmds(in_dir, out_dir, files)
+
+    ##create the tables from the template lists
+    files=[os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis_templates') and f.endswith('.txt')]
+    template_tables(in_dir, out_dir, files)
     
     ##Copy
    # os.system('cp -r '+ out_dir +' ' + out_dir_2)
