@@ -85,9 +85,8 @@ def mode_page(in_dir,out_dir, files):
                 if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
 
                 ##underscores
-                if '_' in line: line=line.replace('_','\\_')
-                
-                
+                if '_' in line and '[[' not in line: line=line.replace('_','\\_')
+                   
                 ##Find text in two quotes (''text'') and format it with \texttt
                 #start="''"
                 #end="''"
@@ -181,8 +180,8 @@ def template_page(in_dir, out_dir, files):
                 if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
          
                 ##underscores
-                if '_' in line: line=line.replace('_','\\_')
-                    
+                if '_' in line and '\_' not in line: line=line.replace('_','\\_')
+                
                 ##Find text in two quotes and format it with \texttt
                 item="''"
                 if item in line:
@@ -494,7 +493,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-25T17_05_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-25T18_10_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
