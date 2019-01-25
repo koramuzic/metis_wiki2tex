@@ -1,9 +1,11 @@
+#from __future__ import unicode_literals
 import os, sys
 import numpy as np
 import re
 import tarfile
 import urllib2
 import pdb
+
 
 #Note on itemizing:
 #To avoid double nesting syntax for subitems (items within items)
@@ -35,9 +37,9 @@ def mode_page(in_dir,out_dir, files):
         sec_name_0=file.replace(in_dir+'/','')
         sec_name_0='MODE_'+sec_name_0.replace('.txt','')
         f1=open(out_dir+sec_name_0+'.tex', 'w')
-       
-        with open(file) as f: lines = [line.rstrip('\n') for line in f]
 
+        with open(file) as f: lines = [line.rstrip('\n') for line in f]
+        
         #Look for positions of ==== (start of sections)
         pos=np.array([-1])
         c1=0
@@ -75,14 +77,32 @@ def mode_page(in_dir,out_dir, files):
 
                 ##All lines that start with '[comment]' should be omitted
                 if '[comment]' in line: continue
+
+                ##some special characters like ~, <
+                if '~' in line: line=line.replace('~','$\sim$')
+                if '<' in line: line=line.replace('<','$<$')
+                if '\xce' in line: line=line.replace('\xce','$\\lambda$')
+                if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
+
+                ##underscores
+                if '_' in line: line=line.replace('_','\\_')
                 
-                ##Find text in double quotes and format it with \texttt
-                start="''"
-                end="''"
-                if start in line:
-                    txt=line[line.find(start)+len(start):line.rfind(end)]
-                    line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
-  
+                
+                ##Find text in two quotes (''text'') and format it with \texttt
+                #start="''"
+                #end="''"
+                #if start in line:
+                #    txt=line[line.find(start)+len(start):line.rfind(end)]
+                #    line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
+                item="''"
+                if item in line:
+                    line=re.sub(r"''(.*?)''", r"\\texttt{\1}", line)
+                    
+                ##Find text in double quotes (") and format correctly
+                item1='"'
+                item2='\xe2'
+                if item1 in line or item2 in line: line = texify_double_quote(line)
+         
                 ##All lines that don't start with '  *' are not itemized
                 if line[:3] != '  *':
                     f1.write(line+"\n")
@@ -153,17 +173,29 @@ def template_page(in_dir, out_dir, files):
 
                 ##All lines that start with '[comment]' should be omitted
                 if '[comment]' in line: continue
-                
-                ##Find text in double quotes and format it with \texttt
-                start="''"
-                end="''"
-                if start in line:
-                    txt=line[line.find(start)+len(start):line.rfind(end)]
-                    line=line.replace(start+txt+end,'\\texttt{'+txt+'}')
-  
-                
+
+                ##some special characters like ~, <
+                if '~' in line: line=line.replace('~','$\sim$')
+                if '<' in line: line=line.replace('<','$<$')
+                if '\xce' in line: line=line.replace('\xce','$\\lambda$')
+                if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
+         
+                ##underscores
+                if '_' in line: line=line.replace('_','\\_')
+                    
+                ##Find text in two quotes and format it with \texttt
+                item="''"
+                if item in line:
+                    line=re.sub(r"''(.*?)''", r"\\texttt{\1}", line)
+                    
+                ##Find text in double quotes and format correctly
+                item1='"'
+                item2='\xe2'
+                if item1 in line or item2 in line: line = texify_double_quote(line)
+         
+                  
                 ##All lines that don't start with '  *' are not itemized
-                if line[:3] != '  *' and line[:5] !='    *':
+                if line[:3] != '  *' and line[:5] !='    *' and line[:7] !='      *':
                     f1.write(line+"\n")
                     if c1 != 0: #this variable signals that new section of the text has started and we have to finish itemizing
                          f1.write('\\end{outline}'+"\n")
@@ -182,6 +214,11 @@ def template_page(in_dir, out_dir, files):
                     if line[4] == '*':
                         f1.write('\\2'+"\n")
                         line=line.replace('*','')
+    
+                    if line[6] == '*':
+                        f1.write('\\3'+"\n")
+                        line=line.replace('*','')
+                            
                     f1.write(line+"\n")
                     if i == pos[j+1]-1 and c2 == 0: f1.write('\\end{outline}'+"\n") #final end itemize
                     c1+=1  
@@ -197,9 +234,9 @@ def param_tables(in_dir,out_dir,files):
         sec_name=file.replace(in_dir+'/','')
         label=sec_name.replace('.txt','')
         template_name=label.replace('_','\_')
-        template_name=template_name.upper()
-        if 'ACQ' in template_name: template_name = template_name.replace('ACQ', 'ACQ'.lower())
-        if 'OBS' in template_name: template_name = template_name.replace('OBS', 'OBS'.lower())
+       # template_name=template_name.upper()
+        if 'metis' in template_name: template_name = template_name.replace('metis', 'metis'.upper())
+       # if 'OBS' in template_name: template_name = template_name.replace('OBS', 'OBS'.lower())
         sec_name='PARAMTABLE_'+sec_name.replace('.txt','.tex')
         f1=open(out_dir+sec_name, 'w')
 
@@ -247,15 +284,15 @@ def param_tables(in_dir,out_dir,files):
                     c2=0
                     for k in range(len(tmp0)):
                         if c1 == 0: tmp=tmp0[k]
-                        else: tmp=tmp+' '+tmp0[k]
+                        else: tmp=tmp+' '+tmp0[k] ##accumulate individual entries until the length exceeds the maxlen
                         c1=c1+1
                         if len(tmp) >= maxlen:
                             c1=0
-                            if c2 == 0:
+                            if c2 == 0: #the first line full table entry, the subsequent one have only one of the columns
                                 f1.write(txt[1] +  ' & '+ txt[2] + ' & '+ tmp  + ' & '+ txt[4] + '\\\\'+"\n")
                                 c2=c2+1
-                        else: f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")
-                               
+                            else: f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")
+                    #write whatever (if anything)  remains           
                     if len(tmp) > 0: f1.write( ' & '+ ' & '+ tmp  + ' & '+ '\\\\'+"\n")         
                                                             
         f1.write('\\hline'+"\n")
@@ -267,7 +304,7 @@ def table_cmds(in_dir,out_dir,files):
 
     ##Translate parameter tables from wiki to latex syntax for the template manual
      for file in files:
-        sec_name='metis_modes.tex'
+        sec_name='METIS_modes.tex'
         f1=open(out_dir+sec_name, 'w')
         with open(file) as f: lines = [line.rstrip('\n') for line in f]
 
@@ -432,9 +469,17 @@ def template_tables(in_dir,out_dir,files):
             f1.write('\\hline'+"\n")    
             f1.write('\\end{tabular}'+"\n")        
             f1.write('\\end{table*}'+"\n")        
-    
 
-                  
+# following https://stackoverflow.com/questions/41820839/convert-quotation-marks-to-latex-format-with-python
+# also escaping percent signs            
+def texify_single_quote(in_string):
+	in_string = ' ' + in_string #Hack (see explanations)
+	return re.sub(r"(?<=\s)'(?!')(.*?)'", r"`\1'", in_string)[1:]
+
+def texify_double_quote(in_string):
+        if '\xe2' in in_string: return re.sub(r'\xe2\x80\x9c(.*?)\xe2\x80\x9d',r"``\1''", in_string)
+        else: return re.sub(r'"(.*?)"', r"``\1''", in_string)
+                 
 def main():
 
     #Purpose: Convert the the metis wiki syntax to tex files
@@ -449,7 +494,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-23T16_40_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-25T17_05_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
