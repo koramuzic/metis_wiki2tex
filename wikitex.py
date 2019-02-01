@@ -80,6 +80,7 @@ def mode_page(in_dir,out_dir, files):
 
                 ##some special characters like ~, <
                 if '~' in line: line=line.replace('~','$\sim$')
+                if '%' in line: line=line.replace('%','$\%$')
                 if '<' in line: line=line.replace('<','$<$')
                 if '\xce' in line: line=line.replace('\xce','$\\lambda$')
                 if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
@@ -178,15 +179,17 @@ def template_page(in_dir, out_dir, files):
                 if '<' in line: line=line.replace('<','$<$')
                 if '\xce' in line: line=line.replace('\xce','$\\lambda$')
                 if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
-         
+             
                 ##underscores
                 if '_' in line and '\_' not in line: line=line.replace('_','\\_')
                 
                 ##Find text in two quotes and format it with \texttt
                 item="''"
-                if item in line:
-                    line=re.sub(r"''(.*?)''", r"\\texttt{\1}", line)
-                    
+                if item in line: line=re.sub(r"''(.*?)''", r"\\texttt{\1}", line)
+
+                item="//"   
+                if item in line: line=re.sub(r"//(.*?)//", r"\\textit{\1}", line)
+  
                 ##Find text in double quotes and format correctly
                 item1='"'
                 item2='\xe2'
@@ -224,7 +227,61 @@ def template_page(in_dir, out_dir, files):
 
             #insert tag to end the subsection
             f1.write('%</'+tag+'>'+"\n")
-                           
+
+
+def template_page_cal(in_dir, out_dir, files):
+    
+    for file in files:
+        sec_name_0=file.replace(in_dir+'/','')
+        sec_name_0='TEMPLATE_'+sec_name_0.replace('.txt','')
+        f1=open(out_dir+sec_name_0+'.tex', 'w')
+                
+        with open(file) as f: lines = [line.rstrip('\n') for line in f]
+
+        #Look for positions of Procedure and Parameters
+        pos=np.array([-1])
+        c1=0
+        for line in lines:
+            if '===Procedure' in line: #Find where the table entry starts
+                start=c1+1
+            if '===Parameters' in line: #Find where the table entry starts
+                end=c1
+            c1=c1+1
+
+        for i in range(start,end):
+                         
+            line=lines[i]
+            ##Some Notes with wiki syntax **Notes:**
+            if '**' in line: line=line.replace('**','')
+            
+            ##All lines that start with '[comment]' should be omitted
+            if '[comment]' in line: continue
+            
+            ##some special characters like ~, <
+            if '~' in line: line=line.replace('~','$\sim$')
+            if '%' in line: line=line.replace('%','$\%$')
+            if '<' in line: line=line.replace('<','$<$')
+            if '\xce' in line: line=line.replace('\xce','$\\lambda$')
+            if '\xbb' in line: line=line.replace('\xbb','') #this is something weird that comes after lambda
+             
+            ##underscores
+            if '_' in line and '\_' not in line: line=line.replace('_','\\_')
+                
+            ##Find text in two quotes and format it with \texttt
+            item="''"
+            if item in line: line=re.sub(r"''(.*?)''", r"\\texttt{\1}", line)
+
+            item="//"   
+            if item in line: line=re.sub(r"//(.*?)//", r"\\textit{\1}", line)
+  
+            ##Find text in double quotes and format correctly
+            item1='"'
+            item2='\xe2'
+            if item1 in line or item2 in line: line = texify_double_quote(line)
+         
+            f1.write(line+"\n")
+             
+            
 
 def param_tables(in_dir,out_dir,files):
 
@@ -271,7 +328,8 @@ def param_tables(in_dir,out_dir,files):
                         tmp=txt[j].replace('_','\_')
                         txt[j]=tmp
                        
-                maxlen=30 #if the line is too long, split into several    
+                maxlen=30 #if the line is too long, split into several
+
                 if len(txt[3].rstrip()) <= maxlen:
                     f1.write(txt[1] + ' & '+ txt[2] + ' & '+ txt[3]  + ' & '+ txt[4] + '\\\\'+"\n")
                 else:
@@ -493,7 +551,7 @@ def main():
    # meta = u.info()
    # date=meta.getheaders("Date")
     
-    tar = tarfile.open("metis_operations_2019-01-25T18_10_01.tar.gz", "r:gz")
+    tar = tarfile.open("metis_operations_2019-01-31T17_20_01.tar.gz", "r:gz")
     tar.extractall()
 
     in_dir="operations"
@@ -512,11 +570,18 @@ def main():
     mode_page(in_dir, out_dir, files)
 
     ##pages for each template, output starts with TEMPLATE
-    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt')]
+    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt') and
+             ('acq' in f or 'obs' in f)]
     template_page(in_dir, out_dir, files)
+
+    ##same as above, but for calibration templates
+    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt') and
+             ('cal' in f)]
+    template_page_cal(in_dir, out_dir, files)
     
     ##create tables for template manual, output starts with PARAMTABLE
-    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt') and ('acq' in f or 'obs' in f)]
+    files = [os.path.join(in_dir, f) for f in os.listdir(in_dir) if f.startswith('metis') and f.endswith('.txt') and
+             ('acq' in f or 'obs' in f or 'cal' in f) and 'sam' not in f]
     param_tables(in_dir, out_dir, files)
 
     ##create the main cmd table
